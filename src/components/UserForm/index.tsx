@@ -1,15 +1,15 @@
 import { useEffect, useState, useContext } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { collection, doc, getDoc, getDocs, serverTimestamp, setDoc, updateDoc } from "firebase/firestore";
-import { auth, db } from "../../services/firebaseConnection";
+import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { db } from "../../services/firebaseConnection";
 import { AuthContext } from "../../contexts/AuthContext";
 import { toast } from "react-hot-toast";
 import { registerSchema } from "../../schemas/registerSchema";
 import { z } from "zod";
 import { CustomInput } from "../CustomInput";
 import { formatPhoneNumber } from "../../utils/formatPhone";
-import { createUserWithEmailAndPassword } from "firebase/auth";
+import { createUser } from "../../services/api";
 
 type UserFormData = z.infer<typeof registerSchema>;
 
@@ -59,60 +59,107 @@ export default function UserForm({ docId }: UserFormProps) {
     loadUserData();
   }, [docId, loggedUser, reset]);
 
+  // async function onSubmit(data: UserFormData) {
+  //   setLoading(true);
+  //   try {
+  //     // === EDIÇÃO DE USUÁRIO EXISTENTE ===
+  //     if (docId) {
+  //       if (!isEditable) {
+  //         toast.error("Você não pode editar os dados deste usuário.");
+  //         return;
+  //       }
+
+  //       const docRef = doc(db, "users", docId);
+  //       const { password, confirmPassword, ...userData } = data; // remove senha
+
+  //       await updateDoc(docRef, userData);
+  //       toast.success("Dados atualizados com sucesso!");
+  //     }
+
+  //     // === CRIAÇÃO DE NOVO USUÁRIO ===
+  //     else {
+  //       // Cria usuário no Firebase Auth
+  //       const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
+  //       const firebaseUser = userCredential.user;
+
+  //       // Gera o próximo ID sequencial
+  //       const usersSnapshot = await getDocs(collection(db, "users"));
+  //       const maxId = usersSnapshot.docs.reduce((max, doc) => {
+  //         const userData = doc.data();
+  //         return userData.id && typeof userData.id === "number" && userData.id > max ? userData.id : max;
+  //       }, 0);
+  //       const nextId = maxId + 1;
+
+  //       // Cria documento no Firestore
+  //       await setDoc(doc(db, "users", firebaseUser.uid), {
+  //         id: nextId,
+  //         name: data.name,
+  //         email: data.email,
+  //         cpf: data.cpf,
+  //         birthDate: data.birthDate,
+  //         gender: data.gender,
+  //         phone: data.phone,
+  //         createdAt: serverTimestamp(),
+  //       });
+
+  //       toast.success("Usuário cadastrado com sucesso!");
+  //       reset();
+  //     }
+  //   } catch (error) {
+  //     console.error("Erro ao salvar os dados:", error);
+  //     toast.error("Erro ao salvar os dados.");
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // }
+
   async function onSubmit(data: UserFormData) {
-  setLoading(true);
-  try {
-    // === EDIÇÃO DE USUÁRIO EXISTENTE ===
-    if (docId) {
-      if (!isEditable) {
-        toast.error("Você não pode editar os dados deste usuário.");
-        return;
+    setLoading(true);
+    try {
+      // === EDIÇÃO DE USUÁRIO EXISTENTE ===
+      if (docId) {
+        if (!isEditable) {
+          toast.error("Você não pode editar os dados deste usuário.");
+          return;
+        }
+
+        const docRef = doc(db, "users", docId);
+        const { password, confirmPassword, ...userData } = data;
+
+        // Garante que birthDate seja string na edição também
+        const payload = {
+          ...userData,
+          birthDate: data.birthDate instanceof Date
+            ? data.birthDate.toISOString().split("T")[0]
+            : data.birthDate,
+        };
+
+        await updateDoc(docRef, payload);
+        toast.success("Dados atualizados com sucesso!");
       }
 
-      const docRef = doc(db, "users", docId);
-      const { password, confirmPassword, ...userData } = data; // remove senha
+      // === CRIAÇÃO DE NOVO USUÁRIO ===
+      else {
+        const { confirmPassword, ...userData } = data;
 
-      await updateDoc(docRef, userData);
-      toast.success("Dados atualizados com sucesso!");
+        const payload = {
+          ...userData,
+          birthDate: data.birthDate instanceof Date
+            ? data.birthDate.toISOString().split("T")[0]
+            : data.birthDate,
+        };
+
+        await createUser(payload);
+        toast.success("Usuário cadastrado com sucesso!");
+        reset();
+      }
+    } catch (error: any) {
+      console.error("Erro ao salvar os dados:", error);
+      toast.error(error.message || "Erro ao salvar os dados.");
+    } finally {
+      setLoading(false);
     }
-
-    // === CRIAÇÃO DE NOVO USUÁRIO ===
-    else {
-      // Cria usuário no Firebase Auth
-      const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
-      const firebaseUser = userCredential.user;
-
-      // Gera o próximo ID sequencial
-      const usersSnapshot = await getDocs(collection(db, "users"));
-      const maxId = usersSnapshot.docs.reduce((max, doc) => {
-        const userData = doc.data();
-        return userData.id && typeof userData.id === "number" && userData.id > max ? userData.id : max;
-      }, 0);
-      const nextId = maxId + 1;
-
-      // Cria documento no Firestore
-      await setDoc(doc(db, "users", firebaseUser.uid), {
-        id: nextId,
-        name: data.name,
-        email: data.email,
-        cpf: data.cpf,
-        birthDate: data.birthDate,
-        gender: data.gender,
-        phone: data.phone,
-        createdAt: serverTimestamp(),
-      });
-
-      toast.success("Usuário cadastrado com sucesso!");
-      reset();
-    }
-  } catch (error) {
-    console.error("Erro ao salvar os dados:", error);
-    toast.error("Erro ao salvar os dados.");
-  } finally {
-    setLoading(false);
   }
-}
-
 
   if (loading) return <div>Carregando dados...</div>;
 
@@ -151,7 +198,8 @@ export default function UserForm({ docId }: UserFormProps) {
                   {...field}
                   id="email"
                   type="email"
-                  disabled={!!docId && !isEditable}
+                  readOnly={!!docId} // No modo de edição o email não será editável, no modo de criação é editável normalmente
+                  className={!!docId ? "bg-gray-100 cursor-not-allowed" : ""}
                   placeholder="email@exemplo.com"
                   error={fieldState.error?.message}
                 />
@@ -285,9 +333,7 @@ export default function UserForm({ docId }: UserFormProps) {
               )}
             />
           )}
-
         </div>
-
 
         <button
           type="submit"
