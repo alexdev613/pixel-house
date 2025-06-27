@@ -1,7 +1,7 @@
 import { useContext } from "react";
 import { AuthContext } from "../../contexts/AuthContext";
 import { Link } from "react-router-dom";
-import { FiUserCheck, FiLogIn } from "react-icons/fi"; // troquei FiUser por FiUserCheck só pra dar um toque diferente
+import { FiUser, FiLogIn } from "react-icons/fi";
 import logoPixelHouse from "../../assets/logoPixelHouse.jpeg";
 
 export function Header() {
@@ -23,10 +23,10 @@ export function Header() {
 
         {!loadingAuth && signed && (
           <div className="flex items-center gap-4">
-            <Link to="/" className="flex items-center gap-2 text-accent-light">
-              <span className="font-medium text-xs sm:text-base">{user?.name}</span>
-              <div className="border-2 border-accent bg-background rounded-full p-0">
-                <FiUserCheck size={30} className="text-accent" />
+            <Link to="/" className="flex items-center gap-2 text-red-700">
+              <span className="font-bold text-xs sm:text-base">{user?.name}</span>
+              <div className="border-4 border-slate-900 bg-red-700 rounded-full p-0">
+                <FiUser size={30} className="text-black" />
               </div>
             </Link>
           </div>
@@ -36,7 +36,7 @@ export function Header() {
           <Link to="/login" className="flex items-center gap-2 text-white">
             <span>Iniciar sessão</span>
             <div className="border-2 rounded-full border-white p-1">
-              <FiLogIn size={30} className="text-vanilla" />
+              <FiLogIn size={30} className="text-slate-200" />
             </div>
           </Link>
         )}

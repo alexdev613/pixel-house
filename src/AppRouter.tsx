@@ -7,6 +7,7 @@ import { PublicRoute } from "./PublicRoute";
 import Register from "./pages/Register";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
+import EditUser from "./pages/EditUser";
 
 const router = createBrowserRouter([
   {
@@ -15,29 +16,19 @@ const router = createBrowserRouter([
       {
         element: <PublicRoute />,
         children: [
-          {
-            path: "/",
-            element: <Register />
-          },
-          {
-            path: "/login",
-            element: <Login />
-          },
+          { path: "/", element: <Register /> },
+          { path: "/login", element: <Login /> },
         ]
       },
       {
         element: <PrivateRoute />,
         children: [
-          {
-            path: "/dashboard",
-            element: <Dashboard />
-          }
+          { path: "/dashboard", element: <Dashboard /> },
+          { path: "/editar-usuario/:id", element: <EditUser/> },
+          { path: "/cadastrar-usuario", element: <Register /> }, // Usuário logado pode cadastrar um novo usuário!
         ]
       },
-      {
-        path: "*",
-        element: <Navigate to="/" replace />
-      }
+      { path: "*", element: <Navigate to="/" replace /> }
     ]
   }
 ]);

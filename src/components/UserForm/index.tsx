@@ -5,30 +5,35 @@ import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { db } from "../../services/firebaseConnection";
 import { AuthContext } from "../../contexts/AuthContext";
 import { toast } from "react-hot-toast";
-import { registerSchema } from "../../schemas/registerSchema";
+import { createUserSchema } from "../../schemas/registerSchema";
+import { editUserSchema } from "../../schemas/editUserSchema";
 import { z } from "zod";
 import { CustomInput } from "../CustomInput";
 import { formatPhoneNumber } from "../../utils/formatPhone";
 import { createUser } from "../../services/api";
-
-type UserFormData = z.infer<typeof registerSchema>;
-
+import { useNavigate } from "react-router-dom";
 interface UserFormProps {
   docId?: string;
 }
+
+type CreateUserFormData = z.infer<typeof createUserSchema>;
+type EditUserFormData = z.infer<typeof editUserSchema>;
 
 export default function UserForm({ docId }: UserFormProps) {
   const { user: loggedUser } = useContext(AuthContext);
   const [loading, setLoading] = useState(false);
   const [isEditable, setIsEditable] = useState(false);
+  const navigate = useNavigate()
+
+  const formSchema = docId ? editUserSchema : createUserSchema;
 
   const {
     control,
     handleSubmit,
     reset,
     formState: { isSubmitting },
-  } = useForm<UserFormData>({
-    resolver: zodResolver(registerSchema),
+  } = useForm<CreateUserFormData | EditUserFormData>({
+    resolver: zodResolver(formSchema),
     mode: "all",
   });
 
@@ -39,11 +44,17 @@ export default function UserForm({ docId }: UserFormProps) {
         const docRef = doc(db, "users", docId);
         const docSnap = await getDoc(docRef);
 
+
         if (docSnap.exists()) {
-          const userData = docSnap.data() as UserFormData;
+          const userData = docSnap.data() as EditUserFormData;
           reset(userData);
 
-          setIsEditable(loggedUser?.uid === docId);
+          console.log("👤 loggedUser?.uid:", loggedUser?.uid);
+          console.log("📄 docId:", docId);
+          console.log("🔐 isEditable será:", !!loggedUser && loggedUser.uid === docId);
+
+          // setIsEditable(loggedUser?.uid === docId);
+          setIsEditable(!!loggedUser && loggedUser.uid === docId);
         } else {
           toast.error("Usuário não encontrado.");
           reset();
@@ -52,116 +63,76 @@ export default function UserForm({ docId }: UserFormProps) {
         setLoading(false);
       } else {
         reset();
-        setIsEditable(true);
+        setIsEditable(true); // Em modo de criação pode editar
       }
     }
 
     loadUserData();
   }, [docId, loggedUser, reset]);
 
-  // async function onSubmit(data: UserFormData) {
-  //   setLoading(true);
-  //   try {
-  //     // === EDIÇÃO DE USUÁRIO EXISTENTE ===
-  //     if (docId) {
-  //       if (!isEditable) {
-  //         toast.error("Você não pode editar os dados deste usuário.");
-  //         return;
-  //       }
-
-  //       const docRef = doc(db, "users", docId);
-  //       const { password, confirmPassword, ...userData } = data; // remove senha
-
-  //       await updateDoc(docRef, userData);
-  //       toast.success("Dados atualizados com sucesso!");
-  //     }
-
-  //     // === CRIAÇÃO DE NOVO USUÁRIO ===
-  //     else {
-  //       // Cria usuário no Firebase Auth
-  //       const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
-  //       const firebaseUser = userCredential.user;
-
-  //       // Gera o próximo ID sequencial
-  //       const usersSnapshot = await getDocs(collection(db, "users"));
-  //       const maxId = usersSnapshot.docs.reduce((max, doc) => {
-  //         const userData = doc.data();
-  //         return userData.id && typeof userData.id === "number" && userData.id > max ? userData.id : max;
-  //       }, 0);
-  //       const nextId = maxId + 1;
-
-  //       // Cria documento no Firestore
-  //       await setDoc(doc(db, "users", firebaseUser.uid), {
-  //         id: nextId,
-  //         name: data.name,
-  //         email: data.email,
-  //         cpf: data.cpf,
-  //         birthDate: data.birthDate,
-  //         gender: data.gender,
-  //         phone: data.phone,
-  //         createdAt: serverTimestamp(),
-  //       });
-
-  //       toast.success("Usuário cadastrado com sucesso!");
-  //       reset();
-  //     }
-  //   } catch (error) {
-  //     console.error("Erro ao salvar os dados:", error);
-  //     toast.error("Erro ao salvar os dados.");
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // }
-
-  async function onSubmit(data: UserFormData) {
+  async function onSubmit(data: CreateUserFormData | EditUserFormData) {
     setLoading(true);
+
     try {
-      // === EDIÇÃO DE USUÁRIO EXISTENTE ===
+      const formattedBirthDate =
+        data.birthDate instanceof Date && !isNaN(data.birthDate.getTime())
+          ? data.birthDate.toISOString().split("T")[0]
+          : typeof data.birthDate === "string" && data.birthDate !== ""
+            ? data.birthDate
+            : "";
+
+      // === EDIÇÃO ===
       if (docId) {
+        const { birthDate, ...userData } = data as EditUserFormData;
+
         if (!isEditable) {
-          toast.error("Você não pode editar os dados deste usuário.");
+          toast.error("Você não pode editar os dados de outro usuário.");
+
+          setTimeout(() => { navigate("/dashboard") }, 1000);
+
           return;
         }
 
         const docRef = doc(db, "users", docId);
-        const { password, confirmPassword, ...userData } = data;
-
-        // Garante que birthDate seja string na edição também
-        const payload = {
+        await updateDoc(docRef, {
           ...userData,
-          birthDate: data.birthDate instanceof Date
-            ? data.birthDate.toISOString().split("T")[0]
-            : data.birthDate,
-        };
-
-        await updateDoc(docRef, payload);
+          birthDate: formattedBirthDate,
+        });
         toast.success("Dados atualizados com sucesso!");
+        navigate("/dashboard");
+        
       }
 
-      // === CRIAÇÃO DE NOVO USUÁRIO ===
+      // === CRIAÇÃO ===
       else {
-        const { confirmPassword, ...userData } = data;
+        const {
+          password,
+          confirmPassword,
+          birthDate,
+          ...userData
+        } = data as CreateUserFormData;
 
-        const payload = {
+        const creationPayload = {
           ...userData,
-          birthDate: data.birthDate instanceof Date
-            ? data.birthDate.toISOString().split("T")[0]
-            : data.birthDate,
+          birthDate: formattedBirthDate,
+          password,
         };
 
-        await createUser(payload);
+        await createUser(creationPayload);
         toast.success("Usuário cadastrado com sucesso!");
         reset();
       }
     } catch (error: any) {
-      console.error("Erro ao salvar os dados:", error);
+      console.error("❌ Erro ao salvar os dados:", error);
       toast.error(error.message || "Erro ao salvar os dados.");
     } finally {
       setLoading(false);
     }
   }
 
-  if (loading) return <div>Carregando dados...</div>;
+  if (loading) return <div className="min-h-screen-minus-header-and-footer">Carregando dados...</div>;
+
+  console.log("✅ Formulário foi renderizado e está pronto para submissão!");
 
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
@@ -185,7 +156,6 @@ export default function UserForm({ docId }: UserFormProps) {
               </div>
             )}
           />
-
 
           {/* Email */}
           <Controller
@@ -238,7 +208,8 @@ export default function UserForm({ docId }: UserFormProps) {
                   {...field}
                   id="birthDate"
                   type="date"
-                  value={field.value ? new Date(field.value).toISOString().split("T")[0] : ""}
+                  // value={field.value ? new Date(field.value).toISOString().split("T")[0] : ""}
+                  value={field.value && !isNaN(new Date(field.value).getTime()) ? new Date(field.value).toISOString().split("T")[0] : ""}
                   onChange={(e) => field.onChange(new Date(e.target.value))}
                   disabled={!!docId && !isEditable}
                   error={fieldState.error?.message}
