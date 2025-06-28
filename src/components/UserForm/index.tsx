@@ -53,8 +53,13 @@ export default function UserForm({ docId }: UserFormProps) {
           console.log("📄 docId:", docId);
           console.log("🔐 isEditable será:", !!loggedUser && loggedUser.uid === docId);
 
-          // setIsEditable(loggedUser?.uid === docId);
-          setIsEditable(!!loggedUser && loggedUser.uid === docId);
+          // Verifica se o usuário logado é o dono dos dados
+          const isOwner = loggedUser?.uid === docId;
+          // Verifica se o usuário logado tem permissão de administrador
+          const isAdmin = loggedUser?.role === "admin";
+          
+          // Permite edição se for o próprio dono ou um administrador
+          setIsEditable(isOwner || isAdmin);
         } else {
           toast.error("Usuário não encontrado.");
           reset();
@@ -120,11 +125,12 @@ export default function UserForm({ docId }: UserFormProps) {
 
         await createUser(creationPayload);
         toast.success("Usuário cadastrado com sucesso!");
+        navigate("/dashboard");
         reset();
       }
     } catch (error: any) {
       console.error("❌ Erro ao salvar os dados:", error);
-      toast.error(error.message || "Erro ao salvar os dados.");
+      toast.error(error.message + "\nErro ao salvar os dados.");
     } finally {
       setLoading(false);
     }

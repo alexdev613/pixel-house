@@ -2,7 +2,7 @@ import { useContext } from "react";
 import { AuthContext } from "../../contexts/AuthContext";
 import { Link } from "react-router-dom";
 import { FiUser, FiLogIn } from "react-icons/fi";
-import logoPixelHouse from "../../assets/logoPixelHouse.jpeg";
+import logoPixelHouse from "../../assets/pixelLogo.png";
 
 export function Header() {
   const { signed, loadingAuth, user } = useContext(AuthContext);
@@ -22,13 +22,24 @@ export function Header() {
         </Link>
 
         {!loadingAuth && signed && (
-          <div className="flex items-center gap-4">
-            <Link to="/" className="flex items-center gap-2 text-red-700">
-              <span className="font-bold text-xs sm:text-base">{user?.name}</span>
-              <div className="border-4 border-slate-900 bg-red-700 rounded-full p-0">
-                <FiUser size={30} className="text-black" />
-              </div>
-            </Link>
+          <div className="flex items-center gap-2">
+            <div className="flex flex-col items-center text-center">
+              <span className="font-bold text-xs sm:text-base text-black relative">
+                {user?.name}
+                <span className={`block h-[2px] mt-1 rounded-full ${user?.role === "admin" ? "bg-green-700" : "bg-gray-500 w-full"}`} ></span>
+              </span>
+              <span className={`text-xs font-medium mt-1 px-2 py-0.5 rounded-full ${user?.role === "admin"
+                  ? "bg-green-300 text-green-700 border border-green-600"
+                  : "bg-gray-300 text-gray-800 border border-gray-500"
+                }`}
+              >
+                {user?.role === "admin" ? "Administrador" : "Usuário básico"}
+              </span>
+            </div>
+
+            <div className="border-4 border-slate-900 bg-red-700 rounded-full p-0">
+              <FiUser size={36} className="text-black" />
+            </div>
           </div>
         )}
 

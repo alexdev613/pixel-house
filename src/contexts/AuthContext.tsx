@@ -14,12 +14,14 @@ export type UserInfoProps = {
   birthDate: string;
   gender: "Masculino" | "Feminino" | "Outro";
   phone: string;
+  role: "admin" | "user";
 };
 
 type AuthContextType = {
   signed: boolean;
   loadingAuth: boolean;
   user: UserInfoProps | null;
+  role: "admin" | "user";
   handleInfoUser: (user: UserInfoProps) => void;
   setUser: (user: UserInfoProps | null) => void;
   signIn: (email: string, password: string) => Promise<void>;
@@ -32,6 +34,7 @@ export const AuthContext = createContext({} as AuthContextType);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserInfoProps | null>(null);
   const [loadingAuth, setLoadingAuth] = useState(true);
+  const [role, setRole] = useState<"admin" | "user">("user");
 
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, (firebaseUser) => {
@@ -51,9 +54,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               birthDate: userData.birthDate ?? "",
               gender: userData.gender ?? "Outro",
               phone: userData.phone ?? "",
+              role: userData.role ?? "user"
             });
+
+            setRole(userData.role ?? "user");
+
           } else {
             setUser(null);
+            setRole("user"); // Limpar role se usuário não encontrado
           }
           setLoadingAuth(false);
         }, (error) => {
@@ -103,6 +111,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         signed: !!user,
         loadingAuth,
         user,
+        role,
         handleInfoUser,
         setUser,
         signIn,
