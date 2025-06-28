@@ -8,6 +8,7 @@ import Register from "./pages/Register";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import EditUser from "./pages/EditUser";
+import Home from "./pages/Home";
 
 const router = createBrowserRouter([
   {
@@ -28,7 +29,8 @@ const router = createBrowserRouter([
           { path: "/cadastrar-usuario", element: <Register /> }, // Usuário logado pode cadastrar um novo usuário!
         ]
       },
-      { path: "*", element: <Navigate to="/" replace /> }
+      { path: "*", element: <Navigate to="/" replace /> },
+      { path: "/", element: <Home />}
     ]
   }
 ]);
