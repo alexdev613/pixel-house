@@ -2,7 +2,7 @@ import { useEffect, useState, useContext } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
-import { db } from "../../services/firebaseConnection";
+import { auth, db } from "../../services/firebaseConnection";
 import { AuthContext } from "../../contexts/AuthContext";
 import { toast } from "react-hot-toast";
 import { createUserSchema } from "../../schemas/registerSchema";
@@ -12,6 +12,8 @@ import { CustomInput } from "../CustomInput";
 import { formatPhoneNumber } from "../../utils/formatPhone";
 import { createUser } from "../../services/api";
 import { useNavigate } from "react-router-dom";
+import { signInWithEmailAndPassword } from "firebase/auth";
+
 interface UserFormProps {
   docId?: string;
 }
@@ -57,7 +59,7 @@ export default function UserForm({ docId }: UserFormProps) {
           const isOwner = loggedUser?.uid === docId;
           // Verifica se o usuário logado tem permissão de administrador
           const isAdmin = loggedUser?.role === "admin";
-          
+
           // Permite edição se for o próprio dono ou um administrador
           setIsEditable(isOwner || isAdmin);
         } else {
@@ -92,9 +94,7 @@ export default function UserForm({ docId }: UserFormProps) {
 
         if (!isEditable) {
           toast.error("Você não pode editar os dados de outro usuário.");
-
           setTimeout(() => { navigate("/dashboard") }, 1000);
-
           return;
         }
 
@@ -103,9 +103,9 @@ export default function UserForm({ docId }: UserFormProps) {
           ...userData,
           birthDate: formattedBirthDate,
         });
+
         toast.success("Dados atualizados com sucesso!");
         navigate("/dashboard");
-        
       }
 
       // === CRIAÇÃO ===
@@ -123,8 +123,17 @@ export default function UserForm({ docId }: UserFormProps) {
           password,
         };
 
+        // Cria usuário via API
         await createUser(creationPayload);
-        toast.success("Usuário cadastrado com sucesso!");
+
+        // Se usuário criado NÃO está logado, faz login com as credenciais criadas
+        if (!loggedUser) {
+          await signInWithEmailAndPassword(auth, userData.email, password);
+          toast.success("Conta criada e login efetuado com sucesso!");
+        } else {
+          toast.success("Usuário criado com sucesso!");
+        }
+
         navigate("/dashboard");
         reset();
       }
@@ -136,7 +145,7 @@ export default function UserForm({ docId }: UserFormProps) {
     }
   }
 
-  if (loading) return <div className="min-h-screen-minus-header-and-footer">Carregando dados...</div>;
+  if (loading) return <div className="min-h-screen-minus-header-and-footer max-w-7xl mx-auto w-full relative">Carregando dados...</div>;
 
   console.log("✅ Formulário foi renderizado e está pronto para submissão!");
 

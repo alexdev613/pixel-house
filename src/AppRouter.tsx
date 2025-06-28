@@ -16,7 +16,7 @@ const router = createBrowserRouter([
       {
         element: <PublicRoute />,
         children: [
-          { path: "/", element: <Register /> },
+          { path: "/entre-na-house", element: <Register /> }, // Visitante sem cadastro pode criar seu usuário
           { path: "/login", element: <Login /> },
         ]
       },

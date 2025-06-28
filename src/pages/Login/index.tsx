@@ -102,6 +102,16 @@ export default function Login() {
           Esqueceu a senha?
         </Link>
       </form>
+      <div className="text-center mt-2 text-slate-600">
+        <span>Já possui conta? </span>
+        <Link
+          to="/entre-na-house"
+          className="text-sm text-blue-600 font-semibold cursor-pointer
+            hover:text-base hover:text-blue-700 duration-500 transition-all"
+        >
+          Entre na House já!
+        </Link>
+      </div>
     </div>
   );
 }
