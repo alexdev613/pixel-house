@@ -5,7 +5,7 @@ import { AuthContext } from "./contexts/AuthContext";
 export function PrivateRoute() {
   const { signed, loadingAuth } = useContext(AuthContext);
 
-  if (loadingAuth) return <div>Carregando...</div>;
+  if (loadingAuth) return <div className="min-h-screen-minus-header-and-footer max-w-7xl mx-auto w-full relative">Carregando...</div>;
 
   return signed ? <Outlet /> : <Navigate to="/login" replace />;
 }
