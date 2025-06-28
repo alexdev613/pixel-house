@@ -48,7 +48,14 @@ export default function UserForm({ docId }: UserFormProps) {
 
 
         if (docSnap.exists()) {
-          const userData = docSnap.data() as EditUserFormData;
+          const rawData = docSnap.data(); // Pega os dados do Firestore
+          // const userData = docSnap.data() as EditUserFormData;
+
+          const userData = {
+            ...(rawData as EditUserFormData),
+            role: rawData.role ?? "user", // se a prop role não existe então esse trecho garante que exista
+          }
+
           reset(userData);
 
           console.log("👤 loggedUser?.uid:", loggedUser?.uid);
@@ -57,11 +64,30 @@ export default function UserForm({ docId }: UserFormProps) {
 
           // Verifica se o usuário logado é o dono dos dados
           const isOwner = loggedUser?.uid === docId;
-          // Verifica se o usuário logado tem permissão de administrador
+
+          // Verifica se o usuário logado é administrador ou root
           const isAdmin = loggedUser?.role === "admin";
+          const isRoot = loggedUser?.role === "root";
+
+          // Papel/role do usuário sendo 
+          const targetRole = userData.role;
 
           // Permite edição se for o próprio dono ou um administrador
-          setIsEditable(isOwner || isAdmin);
+          // setIsEditable(isOwner || isAdmin);
+
+          if (isOwner) {
+            setIsEditable(true); // sempre pode editar a si mesmo
+
+          } else if (isRoot) {
+            setIsEditable(true); // root edita qualquer um
+
+          } else if (isAdmin && targetRole === "user") {
+            setIsEditable(true); // admin só edita users (e ele mesmo pelo isOwner)
+
+          } else {
+            setIsEditable(false); // Bloqueia para os demais
+          
+          }
         } else {
           toast.error("Usuário não encontrado.");
           reset();
