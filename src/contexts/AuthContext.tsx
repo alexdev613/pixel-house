@@ -14,7 +14,7 @@ export type UserInfoProps = {
   birthDate: string;
   gender: "Masculino" | "Feminino" | "Outro";
   phone: string;
-  role: "admin" | "user";
+  role: "root" | "admin" | "user";
 };
 
 type AuthContextType = {

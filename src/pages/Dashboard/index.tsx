@@ -13,11 +13,38 @@ type User = {
   gender: string;
   createdAt: string;
   uid: string;
+  role?: "root" | "admin" | "user";
 };
 
 export default function Dashboard() {
   const { signed } = useContext(AuthContext);
   const [users, setUsers] = useState<User[]>([]);
+
+  // Página atual da lista de usuários
+  const [currentPage, setCurrentPage] = useState(1);
+  // Quantidade de cards por página, adaptável à largura da tela
+  const [itemsPerPage, setItemsPerPage] = useState(6);
+
+  useEffect(() => {
+    const updateItemsPerPage = () => {
+      const width = window.innerWidth;
+      if (width < 640) setItemsPerPage(2);      // Smartphone (sm)
+      else if (width < 768) setItemsPerPage(6); // Tablet (md)
+      else setItemsPerPage(9);                  // Desktop (lg+)
+    };
+
+    updateItemsPerPage(); // Define a quantidade na montagem do componente
+    window.addEventListener("resize", updateItemsPerPage); // Recalcula ao redimensionar
+
+    return () => window.removeEventListener("resize", updateItemsPerPage); // remove o escutador
+  }, []);
+
+  // Total de páginas calculado com base no número de usuários e itens por página
+  const totalPages = Math.ceil(users.length / itemsPerPage);
+  // Índice inicial dos usuários da página atual
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  // Lista de usuários visíveis na página atual (paginada)
+  const currentUsers = users.slice(startIndex, startIndex + itemsPerPage);
 
   useEffect(() => {
     async function fetchUsers() {
@@ -34,6 +61,7 @@ export default function Dashboard() {
           gender: data.gender,
           createdAt: data.createdAt?.toDate().toISOString() || "", // converte corretamente
           uid: doc.id,
+          role: data.role ?? "user", // Pega o role do Firestore ou assume 'user'
         };
       });
 
@@ -53,9 +81,18 @@ export default function Dashboard() {
         <h1 className="text-xl sm:text-2xl font-bold mb-6 pt-10 sm:pt-20 text-center">USUÁRIOS CADASTRADOS:</h1>
 
         <ul className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-          {users.map((user) => (
+          {currentUsers.map((user) => (
             <li key={user.uid} className="bg-white p-4 rounded-lg shadow-md hover:shadow-lg transition-all">
-              <h2 className="text-lg font-semibold text-slate-800">ID: {user.id} -  {user.name}</h2>
+              <div className="flex items-center gap-2 mb-1">
+                <span
+                  className={`inline-block w-3 h-3 rounded-full
+                  ${user.role === "root" ? "bg-green-500" : user.role === "admin" ? "bg-blue-500" : "bg-slate-600"}`}
+                ></span>
+                <h2 className="text-lg font-semibold text-slate-800">
+                  ID: {user.id} - {user.name}
+                </h2>
+              </div>
+
               <p className="text-slate-600 text-sm">Email: {user.email}</p>
               <p className="text-slate-600 text-sm">Gênero: {user.gender}</p>
               <p className="text-slate-500 text-xs mt-1">
@@ -63,13 +100,32 @@ export default function Dashboard() {
               </p>
               <Link
                 to={`/editar-usuario/${user.uid}`}
-                className="inline-block mt-3 text-accent hover:underline font-medium"
+                className="inline-block mt-3 text-accent hover:underline font-medium float-end"
               >
                 Editar
               </Link>
             </li>
           ))}
         </ul>
+
+        {/* Botões de paginação */}
+        <div className="flex justify-center mt-6 pb-4 gap-4">
+          <button
+            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+            disabled={currentPage === 1}
+            className="px-4 py-2 bg-slate-600 text-white rounded hover:bg-slate-700 disabled:opacity-50"
+          >
+            Anterior
+          </button>
+
+          <button
+            onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+            disabled={currentPage === totalPages}
+            className="px-4 py-2 bg-slate-600 text-white rounded hover:bg-slate-700 disabled:opacity-50"
+          >
+            Próxima
+          </button>
+        </div>
       </div>
     </main>
   )
