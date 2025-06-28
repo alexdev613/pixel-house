@@ -26,14 +26,19 @@ export function Header() {
             <div className="flex flex-col items-center text-center">
               <span className="font-bold text-xs sm:text-base text-black relative">
                 {user?.name}
-                <span className={`block h-[2px] mt-1 rounded-full ${user?.role === "admin" ? "bg-green-700" : "bg-gray-500 w-full"}`} ></span>
+                <span className={`block h-[2px] mt-1 rounded-full ${user?.role === "root" ? "bg-green-700" :
+                  user?.role === "admin" ? "bg-blue-700" : "bg-gray-500 w-full"}`}
+                >
+                </span>
               </span>
-              <span className={`text-xs font-medium mt-1 px-2 py-0.5 rounded-full ${user?.role === "admin"
-                  ? "bg-green-300 text-green-700 border border-green-600"
+              <span className={`text-xs font-medium mt-1 px-2 py-0.5 rounded-full ${user?.role === "root"
+                ? "bg-green-300 text-green-800 border border-green-600"
+                : user?.role === "admin"
+                  ? "bg-blue-300 text-blue-800 border border-blue-600"
                   : "bg-gray-300 text-gray-800 border border-gray-500"
                 }`}
               >
-                {user?.role === "admin" ? "Administrador" : "Usuário básico"}
+                {user?.role === "root" ? "Super Admnistardor" : user?.role === "admin" ? "Administrador" : "Usuário básico"}
               </span>
             </div>
 
