@@ -39,6 +39,22 @@ export default function UserForm({ docId }: UserFormProps) {
     mode: "all",
   });
 
+  function canEditUser({ loggedUser, docId, targetRole }: {
+    loggedUser: { uid: string; role?: string } | null;
+    docId: string;
+    targetRole: string;
+  }): boolean {
+    const isOwner = loggedUser?.uid === docId;
+    const isAdmin = loggedUser?.role === "admin";
+    const isRoot = loggedUser?.role === "root";
+
+    if (isOwner) return true;                          // Pode editar a si mesmo
+    if (isRoot) return true;                           // Root pode editar qualquer um
+    if (isAdmin && targetRole === "user") return true; // Admin só edita usuários comuns
+
+    return false; // Bloqueia todos os demais casos
+  }
+
   useEffect(() => {
     async function loadUserData() {
       if (docId) {
@@ -49,11 +65,9 @@ export default function UserForm({ docId }: UserFormProps) {
 
         if (docSnap.exists()) {
           const rawData = docSnap.data(); // Pega os dados do Firestore
-          // const userData = docSnap.data() as EditUserFormData;
-
           const userData = {
             ...(rawData as EditUserFormData),
-            role: rawData.role ?? "user", // se a prop role não existe então esse trecho garante que exista
+            role: rawData.role ?? "user", // Se a prop role não existir, define como "user" por padrão
           }
 
           reset(userData);
@@ -62,37 +76,44 @@ export default function UserForm({ docId }: UserFormProps) {
           console.log("📄 docId:", docId);
           console.log("🔐 isEditable será:", !!loggedUser && loggedUser.uid === docId);
 
-          // Verifica se o usuário logado é o dono dos dados
-          const isOwner = loggedUser?.uid === docId;
+          // Avalia se o usuário logado tem permissão para editar os dados visualizados
+          const editable = canEditUser({
+            loggedUser,                // Usuário atualmente autenticado
+            docId,                     // ID do document do usuário que está sendo editado
+            targetRole: userData.role, // Papel/role do usuário alvo
+          });
 
-          // Verifica se o usuário logado é administrador ou root
-          const isAdmin = loggedUser?.role === "admin";
-          const isRoot = loggedUser?.role === "root";
+          // Define se o form fica habilitado ou não p/edição com base na regra de permissões
+          setIsEditable(editable);
 
-          // Papel/role do usuário sendo 
-          const targetRole = userData.role;
+          {/*
+            // 1ª Lógica de permissividade de edição de usuários segundo papel/role criada antes do helper canRditUser
+            // Verifica se o usuário logado é o dono dos dados
+            const isOwner = loggedUser?.uid === docId;
+            // Verifica se o usuário logado é administrador ou root
+            const isAdmin = loggedUser?.role === "admin";
+            const isRoot = loggedUser?.role === "root";
 
-          // Permite edição se for o próprio dono ou um administrador
-          // setIsEditable(isOwner || isAdmin);
+            // Papel/role do usuário sendo 
+            const targetRole = userData.role;
 
-          if (isOwner) {
-            setIsEditable(true); // sempre pode editar a si mesmo
+            if (isOwner) {
+              setIsEditable(true); // sempre pode editar a si mesmo
+            } else if (isRoot) {
+              setIsEditable(true); // root edita qualquer um
+            } else if (isAdmin && targetRole === "user") {
+              setIsEditable(true); // admin só edita users (e ele mesmo pelo isOwner)
+            } else {
+              setIsEditable(false); // Bloqueia para os demais
+            }
+          */}
 
-          } else if (isRoot) {
-            setIsEditable(true); // root edita qualquer um
-
-          } else if (isAdmin && targetRole === "user") {
-            setIsEditable(true); // admin só edita users (e ele mesmo pelo isOwner)
-
-          } else {
-            setIsEditable(false); // Bloqueia para os demais
-          
-          }
         } else {
           toast.error("Usuário não encontrado.");
           reset();
           setIsEditable(false);
         }
+
         setLoading(false);
       } else {
         reset();
@@ -249,7 +270,6 @@ export default function UserForm({ docId }: UserFormProps) {
                   {...field}
                   id="birthDate"
                   type="date"
-                  // value={field.value ? new Date(field.value).toISOString().split("T")[0] : ""}
                   value={field.value && !isNaN(new Date(field.value).getTime()) ? new Date(field.value).toISOString().split("T")[0] : ""}
                   onChange={(e) => field.onChange(new Date(e.target.value))}
                   disabled={!!docId && !isEditable}
