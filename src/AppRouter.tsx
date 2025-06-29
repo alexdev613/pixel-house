@@ -9,6 +9,7 @@ import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import EditUser from "./pages/EditUser";
 import Home from "./pages/Home";
+import RecoverPassword from "./pages/RecoverPassword";
 
 const router = createBrowserRouter([
   {
@@ -19,18 +20,19 @@ const router = createBrowserRouter([
         children: [
           { path: "/entre-na-house", element: <Register /> }, // Visitante sem cadastro pode criar seu usuário
           { path: "/login", element: <Login /> },
+          { path: "/recuperar-senha", element: <RecoverPassword /> }
         ]
       },
       {
         element: <PrivateRoute />,
         children: [
           { path: "/dashboard", element: <Dashboard /> },
-          { path: "/editar-usuario/:id", element: <EditUser/> },
+          { path: "/editar-usuario/:id", element: <EditUser /> },
           { path: "/cadastrar-usuario", element: <Register /> }, // Usuário logado pode cadastrar um novo usuário!
         ]
       },
       { path: "*", element: <Navigate to="/" replace /> },
-      { path: "/", element: <Home />}
+      { path: "/", element: <Home /> },
     ]
   }
 ]);
