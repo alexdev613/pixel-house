@@ -5,6 +5,8 @@ import { LogoutButton } from '../../components/logoutButton';
 import { db } from "../../services/firebaseConnection";
 import { collection, getDocs, query, orderBy } from "firebase/firestore";
 import { Link } from "react-router-dom";
+import { Tooltip } from "../../components/tooltip";
+import { getTooltipTextByRole } from "../../utils/getTooltipTextByRole";
 
 type User = {
   id: number;
@@ -82,12 +84,16 @@ export default function Dashboard() {
 
         <ul className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
           {currentUsers.map((user) => (
-            <li key={user.uid} className="bg-white p-4 rounded-lg shadow-md hover:shadow-lg transition-all">
+            <li key={user.uid} className="bg-white p-4 rounded-lg shadow-md hover:shadow-lg transition-all overflow-visible">
               <div className="flex items-center gap-2 mb-1">
-                <span
-                  className={`inline-block w-3 h-3 rounded-full
+
+                <Tooltip tooltipText={getTooltipTextByRole(user.role)}>
+                  <span
+                    className={`inline-block w-4 h-4 rounded-full cursor-pointer
                   ${user.role === "root" ? "bg-green-500" : user.role === "admin" ? "bg-blue-500" : "bg-slate-600"}`}
-                ></span>
+                  ></span>
+                </Tooltip>
+
                 <h2 className="text-lg font-semibold text-slate-800">
                   ID: {user.id} - {user.name}
                 </h2>
@@ -100,7 +106,7 @@ export default function Dashboard() {
               </p>
               <Link
                 to={`/editar-usuario/${user.uid}`}
-                className="inline-block mt-3 text-accent hover:underline font-medium float-end"
+                className="inline-block mt-3 text-white font-medium text-center bg-red-600 w-full border rounded-md border-neutral-400"
               >
                 Editar
               </Link>

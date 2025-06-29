@@ -8,7 +8,7 @@ export function Header() {
   const { signed, loadingAuth, user } = useContext(AuthContext);
 
   return (
-    <div className="w-full flex items-center justify-center h-24 bg-primary drop-shadow-xl bg-slate-400">
+    <div className="w-full flex items-center justify-center h-24 drop-shadow-xl bg-slate-400 overflow-visible">
       <header className="flex w-full max-w-7xl items-center justify-between px-4 mx-auto">
         <Link to="/" className="flex items-center gap-x-2">
           <img
