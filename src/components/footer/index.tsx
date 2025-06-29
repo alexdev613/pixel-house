@@ -25,10 +25,10 @@ export function Footer() {
             <FaGithub size={30} className="text-vanilla" title="Ver GitHub do desenvolvedor"/>
           </Link>
           <Link to="https://www.linkedin.com/in/alexjfnascimento/" target="_blank">
-            <FaLinkedin size={30} className="text-vanilla" title="Ver LinkedIn do desenvolvedor"/>
+            <FaLinkedin size={30} className="text-blue-700" title="Ver LinkedIn do desenvolvedor"/>
           </Link>
-          <Link to="https://api.whatsapp.com/send?phone=+5587981157269&text=Olá%20Alex,%20gostaria%20de%20mais%20informações%20sobre%20seu%20trabalho%20de%20programação%20web">
-            <FaWhatsapp size={30} className="text-vanilla" title="Falar diretamente com o desenvolvedor"/>
+          <Link to="https://api.whatsapp.com/send?phone=+5587981157269&text=Olá%20Alex,%20gostaria%20de%20mais%20informações%20sobre%20seu%20trabalho%20de%20programação%20web" target="_blank">
+            <FaWhatsapp size={30} className="text-green-700" title="Falar diretamente com o desenvolvedor"/>
           </Link>
         </div>
       </div>
