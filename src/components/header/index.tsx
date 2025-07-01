@@ -16,8 +16,13 @@ export function Header() {
             alt="Logo Pixel House"
             className="h-16 rounded-full border-accent border"
           />
-          <h1 className="hidden sm:flex sm:text-lg md:text-2xl font-bold text-vanilla">
-            <span className="text-red-700">Pixel</span> <span>house</span>
+          <h1 className="hidden sm:flex flex-col sm:text-lg md:text-2xl font-bold">
+            <div>
+              <span className="text-red-700">Pixel</span><span>house</span>
+            </div>
+            <p className="text-xs w-30 text-center text-white font-thin hover:font-normal hover:text-sm">
+              Landing Page
+            </p>
           </h1>
         </Link>
 
